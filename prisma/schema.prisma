@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions      = [pgcrypto]
+}
+
+model compliance_report {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String       @db.VarChar(255)
+  description     String       @db.VarChar(255)
+  date            DateTime?    @db.Timestamp(6)
+  user_id         String       @db.Uuid
+  organization_id String       @db.Uuid
+  created_at      DateTime     @default(now()) @db.Timestamp(6)
+  updated_at      DateTime     @default(now()) @db.Timestamp(6)
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user            user         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model dashboard {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String       @db.VarChar(255)
+  description     String       @db.VarChar(255)
+  user_id         String       @db.Uuid
+  organization_id String       @db.Uuid
+  created_at      DateTime     @default(now()) @db.Timestamp(6)
+  updated_at      DateTime     @default(now()) @db.Timestamp(6)
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user            user         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model message {
+  id                             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content                        String    @db.VarChar(255)
+  date                           DateTime? @db.Timestamp(6)
+  sender_id                      String    @db.Uuid
+  receiver_id                    String    @db.Uuid
+  created_at                     DateTime  @default(now()) @db.Timestamp(6)
+  updated_at                     DateTime  @default(now()) @db.Timestamp(6)
+  user_message_receiver_idTouser user      @relation("message_receiver_idTouser", fields: [receiver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_message_sender_idTouser   user      @relation("message_sender_idTouser", fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model organization {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description       String?             @db.VarChar(255)
+  name              String              @db.VarChar(255)
+  created_at        DateTime            @default(now()) @db.Timestamp(6)
+  updated_at        DateTime            @default(now()) @db.Timestamp(6)
+  user_id           String              @db.Uuid
+  tenant_id         String              @db.VarChar(255)
+  compliance_report compliance_report[]
+  dashboard         dashboard[]
+  user              user                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model task {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String    @db.VarChar(255)
+  description String    @db.VarChar(255)
+  status      String    @db.VarChar(255)
+  due_date    DateTime? @db.Timestamp(6)
+  user_id     String    @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  updated_at  DateTime  @default(now()) @db.Timestamp(6)
+  user        user      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user {
+  id                                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                             String              @unique @db.VarChar(255)
+  firstName                         String?             @db.VarChar(255)
+  lastName                          String?             @db.VarChar(255)
+  roq_user_id                       String              @db.VarChar(255)
+  tenant_id                         String              @db.VarChar(255)
+  created_at                        DateTime            @default(now()) @db.Timestamp(6)
+  updated_at                        DateTime            @default(now()) @db.Timestamp(6)
+  compliance_report                 compliance_report[]
+  dashboard                         dashboard[]
+  message_message_receiver_idTouser message[]           @relation("message_receiver_idTouser")
+  message_message_sender_idTouser   message[]           @relation("message_sender_idTouser")
+  organization                      organization[]
+  task                              task[]
+}
